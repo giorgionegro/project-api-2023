@@ -16,7 +16,7 @@ typedef struct station {
 char *strtokString;
 int strtokindex = 0;
 char srt_token[30];
-
+uint32_t number_station = 0;
 void quicksort(uint32_t *array, int start, int end);
 
 int partition(uint32_t *array, int start, int end);
@@ -39,6 +39,8 @@ void plan_path(char *line);
 char *strtok2(char *line, const char *string);
 
 char *strtok(char *line, const char *string);
+
+void reverse(uint32_t pInt, uint32_t pInt1);
 
 station *stations = NULL;
 station *to_add = NULL;
@@ -85,11 +87,159 @@ int main() {
 
 }
 
-void plan_path(char *line) {
 
+station get(uint32_t i)
+{
+    station *temp = stations;
+    while(temp->distance != i)
+    {
+        temp = temp->next;
+    }
+    return *temp;
 }
 
+void reverse(uint32_t start, uint32_t end) {
+
+
+
+
+    uint8_t terminate = 1;
+    uint32_t array[number_station+1];
+
+//    int i = 0;
+//    station temp = get(end);
+//    while(terminate)
+//    {
+//        if(temp.cars->autonomy+start >= end)
+//        {
+//            array[i] = temp.distance;
+//            i++;
+//            array[i] = get(end).distance;
+//            i++;
+//            terminate = 0;
+//        }
+//        else if(temp.cars->autonomy+start < temp.next->distance)
+//        {
+//            puts("nessun percorso\n");
+//            return;
+//        }
+//        else if(temp.cars->autonomy==temp.next->distance)
+//        {
+//            array[i]=temp.distance;
+//            i++;
+//            start = temp.next->distance;
+//        }
+//        temp=*temp.next;
+//    }
+//    quicksort(array, 0, i-1);
+//    for(int j = 0; j<i; j++)
+//    {
+//        printf("%d ", array[j]);
+//    }
+//    puts("\n");
+}
+
+
+
+void plan_path(char *line) {
+    strtokindex = 18;
+    char *token = strtok(line, " ");
+    uint32_t start = atoi(token);
+    uint32_t end = atoi(strtok(NULL, " "));
+    int32_t distance = (int32_t)end - (int32_t)start;
+    if (distance < 0) {
+        reverse(start, end);
+        return;
+    }
+
+
+
+
+if(distance == 0)
+    {
+        puts(token);
+        return;
+    }
+    uint8_t terminate = 1;
+    uint32_t array[number_station+1];
+
+    int i = 0;
+    station temp = get(start);
+    while(terminate)
+    {
+        if(temp.cars->autonomy+start >= end)
+        {
+            array[i] = temp.distance;
+            i++;
+            array[i] = get(end).distance;
+            i++;
+            terminate = 0;
+        }
+        else if(temp.cars->autonomy+start < temp.next->distance)
+        {
+            puts("nessun percorso\n");
+            return;
+        }
+        else if(temp.cars->autonomy==temp.next->distance)
+        {
+            array[i]=temp.distance;
+            i++;
+            start = temp.next->distance;
+        }
+        temp=*temp.next;
+    }
+    quicksort(array, 0, i-1);
+    for(int j = 0; j<i; j++)
+    {
+        printf("%d ", array[j]);
+    }
+    puts("\n");
+}
+
+
+
+
+
 void demolish_car(char *line) {
+    strtokindex = 12;
+    char *token = strtok(line, " ");
+    uint32_t distance = atoi(token);
+    car *prev = NULL;
+    for(station *temp = stations; temp != NULL; temp = temp->next) {
+        if (temp->distance == distance) {
+            uint32_t autonomy = atoi(strtok(NULL, " "));
+            for (car *temp2 = temp->cars; temp2 != NULL; temp2 = temp2->next)
+            {
+                if (temp2->autonomy == autonomy)
+                {
+                    temp2->quantity--;
+                    if (temp2->quantity ==0)
+                    {
+                        if (prev == NULL)
+                        {
+                            temp->cars = temp2->next;
+                        }
+                        else {
+                            prev->next = temp2->next;
+                        }
+                        free(temp2);
+                    }
+                    puts("rottamata\n");
+                    return;
+                }
+                if (autonomy > temp2->autonomy)
+                {
+                    puts("non rottamata\n");
+                    return;
+                }
+            }
+
+        }
+        if (distance > temp->distance) {
+            puts("non demolita\n");
+            return;
+        }
+    }
 
 }
 
@@ -134,6 +284,29 @@ void add_car(char *line) {
 }
 
 void demolish_station(char *line) {
+    station *prev = NULL;
+    strtokindex = 18;
+    char *token = strtok(line, " ");
+    uint32_t distance = atoi(token);
+    for (station *temp = stations; temp != NULL; temp = temp->next) {
+        if (temp->distance == distance) {
+            if (prev == NULL) {
+                stations = temp->next;
+            } else {
+                prev->next = temp->next;
+            }
+            free(temp);
+            number_station--;
+            puts("demolita\n");
+            return;
+        }
+        if (distance > temp->distance) {
+            puts("non demolita\n");
+        }
+        prev = temp;
+    }
+
+
 
 }
 
@@ -148,7 +321,7 @@ void add_station(char *line) {
     station *prev = NULL;
     for (station *temp = stations; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
-            puts("non aggiunta");
+            puts("non aggiunta\n");
         }
         if (temp->distance > distance) {
             break;
@@ -182,7 +355,8 @@ void add_station(char *line) {
         cars = new_car;
     }
     new_station->cars = cars;
-    puts("aggiunta");
+    number_station++;
+    puts("aggiunta\n");
 }
 
 
