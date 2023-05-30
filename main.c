@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <stdlib.h>
-#include <string.h>
+
 
 typedef struct car {
     uint32_t autonomy;
+    uint32_t quantity;
     struct car *next;
 } car;
 typedef struct station {
@@ -13,6 +13,9 @@ typedef struct station {
     struct car *cars;
     struct station *next;
 } station;
+char *strtokString;
+int strtokindex = 0;
+char srt_token[30];
 
 void quicksort(uint32_t *array, int start, int end);
 
@@ -31,6 +34,11 @@ void add_car(char *line);
 void demolish_car(char *line);
 
 void plan_path(char *line);
+
+
+char *strtok2(char *line, const char *string);
+
+char *strtok(char *line, const char *string);
 
 station *stations = NULL;
 station *to_add = NULL;
@@ -65,7 +73,15 @@ int main() {
 
     char str[] = "aggiungi-stazione 10 3 200 100 300";
     add_station(str);
-
+    char str2[] = "aggiungi-auto 10 100";
+    add_car(str2);
+    char str3[] = "aggiungi-auto 10 200";
+    add_car(str3);
+    char str4[] = "aggiungi-auto 10 300";
+    add_car(str4);
+    char str5[] = "aggiungi-auto 10 400";
+    add_car(str5);
+    return 0;
 
 }
 
@@ -78,6 +94,42 @@ void demolish_car(char *line) {
 }
 
 void add_car(char *line) {
+    strtokindex = 14;
+    char *token = strtok(line, " ");
+    uint32_t distance = atoi(token);
+    //first we check if we have the station in the list
+    for (station *temp = stations; temp != NULL; temp = temp->next) {
+        if (temp->distance == distance) {
+            uint32_t autonomy = atoi(strtok(NULL, " "));
+            car *prev = NULL;
+            //now we check if we have the car in the list TODO possible optimization by postponing addition to plan_path
+            for (car *temp2 = temp->cars; temp2 != NULL; temp2 = temp2->next) {
+                if (temp2->autonomy == autonomy) {
+                    temp2->quantity++;
+                    puts("aggiunta");
+                    return;
+                }
+                if (autonomy > temp2->autonomy) {
+                    break;
+                }
+                prev = temp2;
+            }
+
+            car *new_car = malloc(sizeof(car));
+            new_car->autonomy = autonomy;
+            new_car->quantity = 1;
+            if (prev == NULL) {
+                new_car->next = temp->cars;
+                temp->cars = new_car;
+            } else {
+                new_car->next = prev->next;
+                prev->next = new_car;
+            }
+            puts("aggiunta");
+            return;
+        }
+    }
+
 
 }
 
@@ -88,36 +140,73 @@ void demolish_station(char *line) {
 void add_station(char *line) {
     //aggiungi-stazione <distanza> <numero auto> <autonomia-1> <autonomia-2> ... <autonomia-n> 1
     //first  we get the distance
-    char *token = strtok(line, " ");
+    strtokindex = 18;
     //disgard the first token
-    token = strtok(NULL, " ");
+    char *token = strtok(line, " ");
     uint32_t distance = atoi(token);
+    //first we check if we have the station in the list
+    station *prev = NULL;
+    for (station *temp = stations; temp != NULL; temp = temp->next) {
+        if (temp->distance == distance) {
+            puts("non aggiunta");
+        }
+        if (temp->distance > distance) {
+            break;
+        }
+        prev = temp;
+    }
     station *new_station = malloc(sizeof(station));
+    if (prev == NULL) {
+        new_station->next = stations;
+        stations = new_station;
+    } else {
+        new_station->next = prev->next;
+        prev->next = new_station;
+    }
     new_station->distance = distance;
-    //get the number of cars
     token = strtok(NULL, " ");
     uint16_t num_cars = atoi(token);
-    //for each car we get the autonomy and we add it to a array, in the end we sort the array and we add it to the station
-    //we can use vla array
     uint32_t autonomy[num_cars];
     for (int i = 0; i < num_cars; ++i) {
         token = strtok(NULL, " ");
         autonomy[i] = atoi(token);
     }
-
-    quicksort(autonomy, 0, num_cars - 1);
+    if (num_cars > 1)
+        quicksort(autonomy, 0, num_cars - 1);
     car *cars = NULL;
     for (int i = 0; i < num_cars; ++i) {
         car *new_car = malloc(sizeof(car));
         new_car->autonomy = autonomy[i];
+        new_car->quantity = 1;
         new_car->next = cars;
         cars = new_car;
     }
     new_station->cars = cars;
-    to_add = new_station;
-
-
+    puts("aggiunta");
 }
+
+
+char *strtok(char *line, const char *string) {
+    if (line != NULL) {
+        strtokString = line;
+    }
+    if (strtokString == NULL)
+        return NULL;
+    int8_t i = 0;
+    while (1) {
+        if (strtokString[strtokindex + i] == string[0] || strtokString[strtokindex + i] == '\0') {
+            srt_token[i] = '\0';
+            strtokindex += i + 1;
+            return srt_token;
+        } else {
+            srt_token[i] = strtokString[strtokindex + i];
+            i++;
+        }
+    }
+}
+
+
+
 
 //quicksort array of uint32_t
 
@@ -133,12 +222,11 @@ uint8_t first_parser(const char *cmd) {
      *   pianifica-percorso <distanza-partenza> <distanza-arrivo> 5
      */
     // if
-    if (cmd[0] == 'r')
-        return 4;
+    if (cmd[7] == 'r')
+        return cmd[0] == 'd' ? 2 : 4;
     else if (cmd[0] == 'a') {
         return cmd[9] == 's' ? 1 : 3;
-    } else if (cmd[0] == 'd')
-        return 2;
+    }
     return 5;
 }
 
@@ -149,10 +237,10 @@ void swap(uint32_t *a, uint32_t *b) {
 }
 
 int partition(uint32_t *array, int start, int end) {
-    int pivot = array[end];
+    uint32_t pivot = array[end];
     int i = start - 1;
     for (int j = start; j < end; ++j) {
-        if (array[j] > pivot) {
+        if (array[j] < pivot) {
             i++;
             swap(&array[i], &array[j]);
         }
@@ -161,11 +249,28 @@ int partition(uint32_t *array, int start, int end) {
     return i + 1;
 }
 
+void insertion_sort(uint32_t *array, int start, int end) {
+    for (int i = start + 1; i <= end; ++i) {
+        uint32_t key = array[i];
+        int j = i - 1;
+        while (j >= start && array[j] > key) {
+            array[j + 1] = array[j];
+            j--;
+        }
+        array[j + 1] = key;
+    }
+}
+
 void quicksort(uint32_t *array, int start, int end) {
-    if (start > end) {
-        int pivot = partition(array, start, end);
-        quicksort(array, start, pivot - 1);
-        quicksort(array, pivot + 1, end);
+    if (start < end) {
+        //hybrid quicksort
+        if (end - start < 10) {
+            insertion_sort(array, start, end);
+        } else {
+            int pivot = partition(array, start, end);
+            quicksort(array, start, pivot - 1);
+            quicksort(array, pivot + 1, end);
+        }
     }
 }
 
