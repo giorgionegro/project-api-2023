@@ -12,14 +12,16 @@ typedef struct station {
     uint32_t distance;
     struct car *cars;
     struct station *next;
+    struct station *prev;
 } station;
 char *strtokString;
 int strtokindex = 0;
 char srt_token[30];
 uint32_t number_station = 0;
-void quicksort(uint32_t *array, int start, int end);
 
-int partition(uint32_t *array, int start, int end);
+void quicksort(uint32_t *array, int start, int end, int decreasing);
+
+int partition(uint32_t *array, int start, int end, int decreasing);
 
 uint8_t first_parser(const char *cmd);
 
@@ -45,201 +47,187 @@ void reverse(uint32_t pInt, uint32_t pInt1);
 station *stations = NULL;
 station *to_add = NULL;
 station *to_del = NULL;
+FILE *input;
+FILE *output;
 
 int main() {
 //read from stdin and write to stdout
-//    char * line = NULL;
-//    size_t len = 0;
-//    ssize_t read;
-//    while (1) {
-//        char * line =gets(STDIN_FILENO);
-//        if (line == NULL)
-//            break;
-//        uint8_t cmd = first_parser(line);
-//        switch (cmd) {
-//            case 1: add_station(line);
-//            break;
-//            case 2: demolish_station(line);
-//            break;
-//            case 3: add_car(line);
-//            break;
-//            case 4: demolish_car(line);
-//            break;
-//            case 5: plan_path(line);
-//            break;
-//        }
-//
-//    }
-//    free(line);
-//    return 0;
+//open input and output files
+    input = fopen("prova.txt", "r");
+    output = fopen("output.txt", "w");
+    char *line = NULL;
+    line = malloc(512 * 5 * sizeof(char));
+    size_t len = 0;
+    ssize_t read;
+    while (fgets(line, 512 * 5, input)) {
+        if (line == NULL)
+            break;
+        /**
+     *   aggiungi-stazione 1
+     *   demolisci-stazione 2
+     *   aggiungi-auto  3
+     *   rottama-auto  4
+     *   pianifica-percorso  5
+     */
+        uint8_t cmd = first_parser(line);
+        switch (cmd) {
+            case 1:
+                add_station(line);
+                break;
+            case 2:
+                demolish_station(line);
+                break;
+            case 3:
+                add_car(line);
+                break;
+            case 4:
+                demolish_car(line);
+                break;
+            case 5:
+                plan_path(line);
+                break;
+        }
 
-    char str[] = "aggiungi-stazione 10 3 200 100 300";
-    add_station(str);
-    char str2[] = "aggiungi-auto 10 100";
-    add_car(str2);
-    char str3[] = "aggiungi-auto 10 200";
-    add_car(str3);
-    char str4[] = "aggiungi-auto 10 300";
-    add_car(str4);
-    char str5[] = "aggiungi-auto 10 400";
-    add_car(str5);
+    }
+    free(line);
     return 0;
+
 
 }
 
 
-station get(uint32_t i)
-{
+station *get(uint32_t i) {
     station *temp = stations;
-    while(temp->distance != i)
-    {
+    while (temp->distance != i) {
         temp = temp->next;
     }
-    return *temp;
+    return temp;
 }
 
 void reverse(uint32_t start, uint32_t end) {
 
 
-
-
     uint8_t terminate = 1;
-    uint32_t array[number_station+1];
-
-//    int i = 0;
-//    station temp = get(end);
-//    while(terminate)
-//    {
-//        if(temp.cars->autonomy+start >= end)
-//        {
-//            array[i] = temp.distance;
-//            i++;
-//            array[i] = get(end).distance;
-//            i++;
-//            terminate = 0;
-//        }
-//        else if(temp.cars->autonomy+start < temp.next->distance)
-//        {
-//            puts("nessun percorso\n");
-//            return;
-//        }
-//        else if(temp.cars->autonomy==temp.next->distance)
-//        {
-//            array[i]=temp.distance;
-//            i++;
-//            start = temp.next->distance;
-//        }
-//        temp=*temp.next;
-//    }
-//    quicksort(array, 0, i-1);
-//    for(int j = 0; j<i; j++)
-//    {
-//        printf("%d ", array[j]);
-//    }
-//    puts("\n");
+    uint32_t array[number_station + 1];
+    array[0] = start;
+    uint32_t fs = start;
+    uint32_t fe = end;
+    int i = 1;
+    station *temp = get(end);
+    station *start_station = get(start);
+    while (terminate) {
+        if (end == start) {
+            terminate = 0;
+            break;
+        } else if (start_station->cars != NULL && temp->distance + start_station->cars->autonomy >= start) {
+            array[i] = temp->distance;
+            i++;
+            start = temp->distance;
+            temp = get(end);
+            continue;
+        } else if (start_station->cars == NULL ||
+                   start_station->distance - start_station->cars->autonomy > start_station->prev->distance) {
+            fputs("nessun percorso\n", output);
+            return;
+        }
+        temp = temp->next;
+    }
+    quicksort(array, 0, i - 1, 1);
+    for (int j = 0; j < i; j++) {
+        fprintf(output, "%d ", array[j]);
+    }
+    fputs("\n", output);
 }
 
 
-
 void plan_path(char *line) {
-    strtokindex = 18;
+    strtokindex = 19;
     char *token = strtok(line, " ");
     uint32_t start = atoi(token);
     uint32_t end = atoi(strtok(NULL, " "));
-    int32_t distance = (int32_t)end - (int32_t)start;
+    uint32_t fs = start;
+    uint32_t fe = end;
+    int32_t distance = (int32_t) end - (int32_t) start;
     if (distance < 0) {
         reverse(start, end);
         return;
     }
 
 
-
-
-if(distance == 0)
-    {
-        puts(token);
+    if (distance == 0) {
+        fputs(token, output);
         return;
     }
     uint8_t terminate = 1;
-    uint32_t array[number_station+1];
+    uint32_t array[number_station + 1];
+    array[0] = end;
 
-    int i = 0;
-    station temp = get(start);
-    while(terminate)
-    {
-        if(temp.cars->autonomy+start >= end)
-        {
-            array[i] = temp.distance;
-            i++;
-            array[i] = get(end).distance;
-            i++;
+
+    int i = 1;
+    station *temp = get(start);
+    while (terminate) {
+        if (end == start) {
             terminate = 0;
-        }
-        else if(temp.cars->autonomy+start < temp.next->distance)
-        {
-            puts("nessun percorso\n");
-            return;
-        }
-        else if(temp.cars->autonomy==temp.next->distance)
-        {
-            array[i]=temp.distance;
+        } else if (temp->cars->autonomy + start >= end) {
+            array[i] = temp->distance;
             i++;
-            start = temp.next->distance;
+            end = temp->distance;
+            temp = get(start);
+            continue;
+        } else if (temp->cars->autonomy + start < temp->next->distance) {
+            fputs("nessun percorso\n", output);
+            return;
+        } else if (temp->cars->autonomy == temp->next->distance) {
+            array[i] = temp->distance;
+            i++;
+            start = temp->next->distance;
         }
-        temp=*temp.next;
+        temp = temp->next;
     }
-    quicksort(array, 0, i-1);
-    for(int j = 0; j<i; j++)
-    {
-        printf("%d ", array[j]);
+    quicksort(array, 0, i - 1, 0);
+    for (int j = 0; j < i; j++) {
+        fprintf(output, "%d ", array[j]);
     }
-    puts("\n");
+    fputs("\n", output);
 }
 
 
-
-
-
 void demolish_car(char *line) {
-    strtokindex = 12;
+    strtokindex = 13;
     char *token = strtok(line, " ");
     uint32_t distance = atoi(token);
     car *prev = NULL;
-    for(station *temp = stations; temp != NULL; temp = temp->next) {
+    for (station *temp = stations; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
             uint32_t autonomy = atoi(strtok(NULL, " "));
-            for (car *temp2 = temp->cars; temp2 != NULL; temp2 = temp2->next)
-            {
-                if (temp2->autonomy == autonomy)
-                {
+            for (car *temp2 = temp->cars; temp2 != NULL; temp2 = temp2->next) {
+                if (temp2->autonomy == autonomy) {
                     temp2->quantity--;
-                    if (temp2->quantity ==0)
-                    {
-                        if (prev == NULL)
-                        {
+                    if (temp2->quantity == 0) {
+                        if (prev == NULL) {
                             temp->cars = temp2->next;
-                        }
-                        else {
+                        } else {
                             prev->next = temp2->next;
                         }
                         free(temp2);
                     }
-                    puts("rottamata\n");
+                    fputs("rottamata\n", output);
                     return;
                 }
-                if (autonomy > temp2->autonomy)
-                {
-                    puts("non rottamata\n");
+                if (autonomy > temp2->autonomy) {
+                    fputs("non rottamata\n", output);
                     return;
                 }
+                prev = temp2;
             }
 
         }
-        if (distance > temp->distance) {
-            puts("non demolita\n");
+        if (distance < temp->distance) {
+            fputs("non demolita\n", output);
             return;
         }
     }
+    fputs("non demolita\n", output);
 
 }
 
@@ -256,7 +244,7 @@ void add_car(char *line) {
             for (car *temp2 = temp->cars; temp2 != NULL; temp2 = temp2->next) {
                 if (temp2->autonomy == autonomy) {
                     temp2->quantity++;
-                    puts("aggiunta");
+                    fputs("aggiunta\n", output);
                     return;
                 }
                 if (autonomy > temp2->autonomy) {
@@ -275,7 +263,7 @@ void add_car(char *line) {
                 new_car->next = prev->next;
                 prev->next = new_car;
             }
-            puts("aggiunta");
+            fputs("aggiunta\n", output);
             return;
         }
     }
@@ -285,7 +273,7 @@ void add_car(char *line) {
 
 void demolish_station(char *line) {
     station *prev = NULL;
-    strtokindex = 18;
+    strtokindex = 19;
     char *token = strtok(line, " ");
     uint32_t distance = atoi(token);
     for (station *temp = stations; temp != NULL; temp = temp->next) {
@@ -295,17 +283,19 @@ void demolish_station(char *line) {
             } else {
                 prev->next = temp->next;
             }
+            temp->next->prev = prev;
             free(temp);
             number_station--;
-            puts("demolita\n");
+            fputs("demolita\n", output);
             return;
         }
-        if (distance > temp->distance) {
-            puts("non demolita\n");
+        if (distance < temp->distance) {
+            fputs("non demolita\n", output);
+            return;
         }
         prev = temp;
     }
-
+    fputs("non demolita\n", output);
 
 
 }
@@ -321,7 +311,7 @@ void add_station(char *line) {
     station *prev = NULL;
     for (station *temp = stations; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
-            puts("non aggiunta\n");
+            fputs("non aggiunta\n", output);
         }
         if (temp->distance > distance) {
             break;
@@ -336,6 +326,7 @@ void add_station(char *line) {
         new_station->next = prev->next;
         prev->next = new_station;
     }
+    new_station->prev = prev;
     new_station->distance = distance;
     token = strtok(NULL, " ");
     uint16_t num_cars = atoi(token);
@@ -345,18 +336,24 @@ void add_station(char *line) {
         autonomy[i] = atoi(token);
     }
     if (num_cars > 1)
-        quicksort(autonomy, 0, num_cars - 1);
+        quicksort(autonomy, 0, num_cars - 1, 0);
     car *cars = NULL;
+    uint32_t prev_autonomy = -1;
     for (int i = 0; i < num_cars; ++i) {
+        if (prev_autonomy == autonomy[i]) {
+            cars->quantity++;
+            continue;
+        }
         car *new_car = malloc(sizeof(car));
         new_car->autonomy = autonomy[i];
         new_car->quantity = 1;
         new_car->next = cars;
         cars = new_car;
+        prev_autonomy = autonomy[i];
     }
     new_station->cars = cars;
     number_station++;
-    puts("aggiunta\n");
+    fputs("aggiunta\n", output);
 }
 
 
@@ -396,12 +393,12 @@ uint8_t first_parser(const char *cmd) {
      *   pianifica-percorso <distanza-partenza> <distanza-arrivo> 5
      */
     // if
-    if (cmd[7] == 'r')
-        return cmd[0] == 'd' ? 2 : 4;
+    if (cmd[7] == 'c')
+        return cmd[0] == 'd' ? 2 : 5;
     else if (cmd[0] == 'a') {
         return cmd[9] == 's' ? 1 : 3;
     }
-    return 5;
+    return 4;
 }
 
 void swap(uint32_t *a, uint32_t *b) {
@@ -410,11 +407,16 @@ void swap(uint32_t *a, uint32_t *b) {
     *b = temp;
 }
 
-int partition(uint32_t *array, int start, int end) {
+int partition(uint32_t *array, int start, int end, int decreasing) {
     uint32_t pivot = array[end];
     int i = start - 1;
     for (int j = start; j < end; ++j) {
-        if (array[j] < pivot) {
+        //decreasing order if decreasing == 1
+        if (array[j] < pivot && decreasing) {
+            i++;
+            swap(&array[i], &array[j]);
+        }
+        if (array[j] > pivot && !decreasing) {
             i++;
             swap(&array[i], &array[j]);
         }
@@ -423,27 +425,39 @@ int partition(uint32_t *array, int start, int end) {
     return i + 1;
 }
 
-void insertion_sort(uint32_t *array, int start, int end) {
+void insertion_sort(uint32_t *array, int start, int end, int decreasing) {
     for (int i = start + 1; i <= end; ++i) {
         uint32_t key = array[i];
         int j = i - 1;
-        while (j >= start && array[j] > key) {
-            array[j + 1] = array[j];
-            j--;
+        //decreasing order if decreasing == 1
+        if (decreasing) {
+            while (j >= start && array[j] < key) {
+                array[j + 1] = array[j];
+                j--;
+            }
+            array[j + 1] = key;
+            continue;
+        } else {
+            while (j >= start && array[j] > key) {
+                array[j + 1] = array[j];
+                j--;
+            }
+            array[j + 1] = key;
         }
-        array[j + 1] = key;
+
+
     }
 }
 
-void quicksort(uint32_t *array, int start, int end) {
+void quicksort(uint32_t *array, int start, int end, int decreasing) {
     if (start < end) {
         //hybrid quicksort
         if (end - start < 10) {
-            insertion_sort(array, start, end);
+            insertion_sort(array, start, end, decreasing);
         } else {
-            int pivot = partition(array, start, end);
-            quicksort(array, start, pivot - 1);
-            quicksort(array, pivot + 1, end);
+            int pivot = partition(array, start, end, decreasing);
+            quicksort(array, start, pivot - 1, decreasing);
+            quicksort(array, pivot + 1, end, decreasing);
         }
     }
 }
