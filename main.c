@@ -18,6 +18,18 @@ char *strtokString;
 int strtokindex = 0;
 char srt_token[30];
 uint32_t number_station = 0;
+typedef struct dynamic_array {
+    uint32_t *array;
+    uint32_t capacity;
+} dynamic_array;
+
+
+uint32_t get(uint32_t i, dynamic_array *array);
+
+void set(uint32_t i, uint32_t value, dynamic_array *array);
+
+void init_array(dynamic_array *array);
+
 
 void quicksort(uint32_t *array, int start, int end, int decreasing);
 
@@ -49,6 +61,25 @@ station *to_add = NULL;
 station *to_del = NULL;
 FILE *input;
 FILE *output;
+
+
+uint32_t get(uint32_t i, dynamic_array *array) {
+    return array->array[i];
+}
+
+void set(uint32_t i, uint32_t value, dynamic_array *array) {
+    if (array->capacity <= i) {
+        array->capacity = i * 2;
+        array->array = realloc(array->array, array->capacity * sizeof(uint32_t));
+    }
+    array->array[i] = value;
+}
+
+void init_array(dynamic_array *array) {
+    array->capacity = 5;
+    array->array = malloc(array->capacity * sizeof(uint32_t));
+}
+
 
 int main() {
 //read from stdin and write to stdout
@@ -96,7 +127,7 @@ int main() {
 }
 
 
-station *get(uint32_t i) {
+station *get_station(uint32_t i) {
     station *temp = stations;
     while (temp->distance != i) {
         temp = temp->next;
@@ -108,22 +139,23 @@ void reverse(uint32_t start, uint32_t end) {
 
 
     uint8_t terminate = 1;
-    uint32_t array[number_station + 1];
-    array[0] = start;
+    dynamic_array *result = malloc(sizeof(dynamic_array));
+    init_array(result);
+    set(0, start, result);
     uint32_t fs = start;
     uint32_t fe = end;
     int i = 1;
-    station *temp = get(end);
-    station *start_station = get(start);
+    station *temp = get_station(end);
+    station *start_station = get_station(start);
     while (terminate) {
         if (end == start) {
             terminate = 0;
             break;
         } else if (start_station->cars != NULL && temp->distance + start_station->cars->autonomy >= start) {
-            array[i] = temp->distance;
+            set(i, temp->distance, result);
             i++;
             start = temp->distance;
-            temp = get(end);
+            temp = get_station(end);
             continue;
         } else if (start_station->cars == NULL ||
                    start_station->distance - start_station->cars->autonomy > start_station->prev->distance) {
@@ -132,9 +164,9 @@ void reverse(uint32_t start, uint32_t end) {
         }
         temp = temp->next;
     }
-    quicksort(array, 0, i - 1, 1);
+    quicksort(result->array, 0, i - 1, 1);
     for (int j = 0; j < i; j++) {
-        fprintf(output, "%d ", array[j]);
+        fprintf(output, "%d ", get(j, result));
     }
     fputs("\n", output);
 }
@@ -159,34 +191,33 @@ void plan_path(char *line) {
         return;
     }
     uint8_t terminate = 1;
-    uint32_t array[number_station + 1];
-    array[0] = end;
-
-
+    dynamic_array *result = malloc(sizeof(dynamic_array));
+    init_array(result);
+    set(0, end, result);
     int i = 1;
-    station *temp = get(start);
+    station *temp = get_station(start);
     while (terminate) {
         if (end == start) {
             terminate = 0;
         } else if (temp->cars->autonomy + start >= end) {
-            array[i] = temp->distance;
+            set(i, temp->distance, result);
             i++;
             end = temp->distance;
-            temp = get(start);
+            temp = get_station(start);
             continue;
         } else if (temp->cars->autonomy + start < temp->next->distance) {
             fputs("nessun percorso\n", output);
             return;
         } else if (temp->cars->autonomy == temp->next->distance) {
-            array[i] = temp->distance;
+            set(i, temp->distance, result);
             i++;
             start = temp->next->distance;
         }
         temp = temp->next;
     }
-    quicksort(array, 0, i - 1, 0);
+    quicksort(result->array, 0, i - 1, 0);
     for (int j = 0; j < i; j++) {
-        fprintf(output, "%d ", array[j]);
+        fprintf(output, "%d ", get(j, result));
     }
     fputs("\n", output);
 }
@@ -302,7 +333,7 @@ void demolish_station(char *line) {
 
 void add_station(char *line) {
     //aggiungi-stazione <distanza> <numero auto> <autonomia-1> <autonomia-2> ... <autonomia-n> 1
-    //first  we get the distance
+    //first  we get_station the distance
     strtokindex = 18;
     //disgard the first token
     char *token = strtok(line, " ");
