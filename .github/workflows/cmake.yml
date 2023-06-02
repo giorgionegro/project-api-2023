@@ -41,7 +41,7 @@ jobs:
           fi
         
     - name: rest
-      run: sudo apt-get install -y libc6-dbg && sudo cp --verbose --force --recursive cmake-build-debug/* build/ 
+      run: sudo apt-get install -y libc6-dbg &&  mkdir build && sudo cp --verbose --force --recursive cmake-build-debug/* build/ 
     
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
