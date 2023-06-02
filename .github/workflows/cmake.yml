@@ -54,5 +54,5 @@ jobs:
     - name: install
       run: sudo apt-get install -y valgrind
     - name: valgrind
-      run: ls build/ && valgrind ./build/api
+      run: cd build/ && valgrind ./api
 
