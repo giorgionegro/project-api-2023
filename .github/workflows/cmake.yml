@@ -25,12 +25,12 @@ jobs:
       id: cache-valgrind
       with:
         path: "~/valgrind"
-        key: ${{secrets.VALGRIND_VERSION}}
+        key: 1
 
     - name: Install valgrind
       env:
         CACHE_HIT: ${{steps.cache-valgrind.outputs.cache-hit}}
-        VALGRIND_VERSION: ${{secrets.VALGRIND_VERSION}}
+        VALGRIND_VERSION: 1
       run: |
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --verbose --force --recursive ~/valgrind/* /
@@ -40,6 +40,9 @@ jobs:
             sudo dpkg -L valgrind | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/valgrind/
           fi
         
+    - name: rest
+      run: sudo apt-get install -y libc6-dbg
+    
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
