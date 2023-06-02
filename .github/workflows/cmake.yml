@@ -29,11 +29,13 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       
+  valgrind:
+    runs-on: ubuntu-latest
+    name: 42valgrind
+    steps:
+    - uses: actions/checkout@v2
     - name: 42valgrind Leak checker
-  # You may pin to the exact commit or the version.
-  # uses: solareenlo/42valgrind-action@029675d9eedfd83ea237adbb984c16a5ec074fc5
       uses: solareenlo/42valgrind-action@v1.0.3
       with:
-    # Flags passed to valgrin
-        flags: .
+        flags: 'sh test_valgrind.sh'
 
