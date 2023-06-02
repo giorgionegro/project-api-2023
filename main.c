@@ -29,6 +29,7 @@ uint32_t get(uint32_t i, dynamic_array *array);
 void set(uint32_t i, uint32_t value, dynamic_array *array);
 
 void init_array(dynamic_array *array);
+void free_array(dynamic_array *array);
 
 
 void quicksort(uint32_t *array, int start, int end, int decreasing);
@@ -56,6 +57,8 @@ char *strtok(char *line, const char *string);
 
 void reverse(uint32_t pInt, uint32_t pInt1);
 
+void free_cars(struct car *pCar);
+
 station *stations = NULL;
 station *to_add = NULL;
 station *to_del = NULL;
@@ -78,6 +81,11 @@ void set(uint32_t i, uint32_t value, dynamic_array *array) {
 void init_array(dynamic_array *array) {
     array->capacity = 5;
     array->array = malloc(array->capacity * sizeof(uint32_t));
+}
+
+void free_array(dynamic_array *array) {
+    free(array->array);
+    free(array);
 }
 
 
@@ -160,6 +168,7 @@ void reverse(uint32_t start, uint32_t end) {
         } else if (start_station->cars == NULL ||
                    start_station->distance - start_station->cars->autonomy > start_station->prev->distance) {
             fputs("nessun percorso\n", output);
+            free_array(result);
             return;
         }
         temp = temp->next;
@@ -169,6 +178,7 @@ void reverse(uint32_t start, uint32_t end) {
         fprintf(output, "%d ", get(j, result));
     }
     fputs("\n", output);
+    free_array(result);
 }
 
 
@@ -207,6 +217,7 @@ void plan_path(char *line) {
             continue;
         } else if (temp->cars->autonomy + start < temp->next->distance) {
             fputs("nessun percorso\n", output);
+            free_array(result);
             return;
         } else if (temp->cars->autonomy == temp->next->distance) {
             set(i, temp->distance, result);
@@ -220,7 +231,7 @@ void plan_path(char *line) {
         fprintf(output, "%d ", get(j, result));
     }
     fputs("\n", output);
-}
+    free_array(result);}
 
 
 void demolish_car(char *line) {
@@ -315,6 +326,7 @@ void demolish_station(char *line) {
                 prev->next = temp->next;
             }
             temp->next->prev = prev;
+            free_cars(temp->cars);
             free(temp);
             number_station--;
             fputs("demolita\n", output);
@@ -328,6 +340,15 @@ void demolish_station(char *line) {
     }
     fputs("non demolita\n", output);
 
+
+}
+
+void free_cars(struct car *pCar) {
+    for (car *temp = pCar; temp != NULL;) {
+        car *next = temp->next;
+        free(temp);
+        temp = next;
+    }
 
 }
 
