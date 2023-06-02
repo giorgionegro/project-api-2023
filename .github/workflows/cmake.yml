@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: solareenlo/42valgrind-action@v1.0.3
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -29,13 +29,6 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       
-  valgrind:
-    runs-on: ubuntu-latest
-    name: 42valgrind
-    steps:
-    - uses: actions/checkout@v2
-    - name: 42valgrind Leak checker
-      uses: solareenlo/42valgrind-action@v1.0.3
-      with:
-        flags: 'sh test_valgrind.sh'
+    - name: valgrind
+      run: valgrind api
 
