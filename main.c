@@ -29,6 +29,7 @@ uint32_t get(uint32_t i, dynamic_array *array);
 void set(uint32_t i, uint32_t value, dynamic_array *array);
 
 void init_array(dynamic_array *array);
+
 void free_array(dynamic_array *array);
 
 
@@ -137,7 +138,7 @@ int main() {
 
 station *get_station(uint32_t i) {
     station *temp = stations;
-    while (temp->distance != i) {
+    while (temp != NULL && temp->distance != i) {
         temp = temp->next;
     }
     return temp;
@@ -155,6 +156,11 @@ void reverse(uint32_t start, uint32_t end) {
     int i = 1;
     station *temp = get_station(end);
     station *start_station = get_station(start);
+    if (temp == NULL || start_station == NULL) {
+        fputs("nessun percorso\n", output);
+        free_array(result);
+        return;
+    }
     while (terminate) {
         if (end == start) {
             terminate = 0;
@@ -198,6 +204,7 @@ void plan_path(char *line) {
 
     if (distance == 0) {
         fputs(token, output);
+        fputs("\n", output);
         return;
     }
     uint8_t terminate = 1;
@@ -206,6 +213,11 @@ void plan_path(char *line) {
     set(0, end, result);
     int i = 1;
     station *temp = get_station(start);
+    if (temp == NULL) {
+        fputs("nessun percorso\n", output);
+        free_array(result);
+        return;
+    }
     while (terminate) {
         if (end == start) {
             terminate = 0;
@@ -231,7 +243,8 @@ void plan_path(char *line) {
         fprintf(output, "%d ", get(j, result));
     }
     fputs("\n", output);
-    free_array(result);}
+    free_array(result);
+}
 
 
 void demolish_car(char *line) {
@@ -308,7 +321,12 @@ void add_car(char *line) {
             fputs("aggiunta\n", output);
             return;
         }
+        if (distance < temp->distance) {
+            fputs("non aggiunta\n", output);
+            return;
+        }
     }
+    fputs("non aggiunta\n", output);
 
 
 }
@@ -325,7 +343,8 @@ void demolish_station(char *line) {
             } else {
                 prev->next = temp->next;
             }
-            temp->next->prev = prev;
+            if (temp->next != NULL) { temp->next->prev = prev; }
+
             free_cars(temp->cars);
             free(temp);
             number_station--;
@@ -364,6 +383,7 @@ void add_station(char *line) {
     for (station *temp = stations; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
             fputs("non aggiunta\n", output);
+            return;
         }
         if (temp->distance > distance) {
             break;
@@ -512,6 +532,8 @@ void quicksort(uint32_t *array, int start, int end, int decreasing) {
             quicksort(array, pivot + 1, end, decreasing);
         }
     }
+
+
 }
 
 

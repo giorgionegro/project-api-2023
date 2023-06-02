@@ -14,3 +14,95 @@ pianifica-percorso 50 30
 pianifica-percorso 50 20
 aggiungi-auto 50 30
 pianifica-percorso 50 20
+aggiungi-stazione 20 3 5 10 15
+aggiungi-stazione 4 3 1 2 3
+aggiungi-stazione 30 0
+demolisci-stazione 3
+demolisci-stazione 4
+aggiungi-auto 30 40
+aggiungi-stazione 50 3 20 25 7
+rottama-auto 20 8
+rottama-auto 9999 5
+rottama-auto 50 7
+pianifica-percorso 20 30
+pianifica-percorso 20 50
+pianifica-percorso 50 30
+pianifica-percorso 50 20
+aggiungi-auto 50 30
+pianifica-percorso 50 20
+aggiungi-stazione 60 2 10 8
+demolisci-stazione 60
+aggiungi-auto 60 25
+aggiungi-stazione 70 4 5 10 3 1
+demolisci-stazione 70
+demolisci-stazione 50
+aggiungi-auto 70 50
+aggiungi-stazione 80 3 10 15 20
+rottama-auto 80 10
+pianifica-percorso 70 80
+pianifica-percorso 20 80
+aggiungi-auto 80 35
+aggiungi-stazione 90 2 5 8
+aggiungi-stazione 100 4 10 15 20 25
+demolisci-stazione 90
+demolisci-stazione 100
+aggiungi-auto 90 30
+aggiungi-auto 100 40
+aggiungi-stazione 110 3 1 2 3
+demolisci-stazione 110
+rottama-auto 90 15
+rottama-auto 100 20
+rottama-auto 110 3
+pianifica-percorso 90 100
+pianifica-percorso 100 90
+pianifica-percorso 110 90
+pianifica-percorso 110 100
+aggiungi-auto 110 25
+aggiungi-stazione 120 2 5 8
+demolisci-stazione 120
+aggiungi-auto 120 30
+aggiungi-stazione 130 4 10 15 20 25
+demolisci-stazione 130
+demolisci-stazione 120
+aggiungi-auto 130 40
+aggiungi-stazione 140 3 1 2 3
+rottama-auto 130 15
+rottama-auto 140 20
+rottama-auto 120 3
+pianifica-percorso 130 140
+pianifica-percorso 140 130
+pianifica-percorso 120 130
+pianifica-percorso 120 140
+aggiungi-auto 120 25
+aggiungi-stazione 150 2 5 8
+demolisci-stazione 150
+aggiungi-auto 150 30
+aggiungi-stazione 160 4 10 15 20 25
+demolisci-stazione 160
+demolisci-stazione 150
+aggiungi-auto 160 40
+aggiungi-stazione 170 3 1 2 3
+rottama-auto 160 15
+rottama-auto 170 20
+rottama-auto 150 3
+pianifica-percorso 160 170
+pianifica-percorso 170 160
+pianifica-percorso 150 160
+pianifica-percorso 150 170
+aggiungi-auto 150 25
+aggiungi-stazione 180 2 5 8
+demolisci-stazione 180
+aggiungi-auto 180 30
+aggiungi-stazione 190 4 10 15 20 25
+demolisci-stazione 190
+demolisci-stazione 180
+aggiungi-auto 190 40
+aggiungi-stazione 200 3 1 2 3
+rottama-auto 190 15
+rottama-auto 200 20
+rottama-auto 180 3
+pianifica-percorso 190 200
+pianifica-percorso 200 190
+pianifica-percorso 180 190
+pianifica-percorso 180 200
+aggiungi-auto 180 25
