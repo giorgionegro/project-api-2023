@@ -54,5 +54,5 @@ jobs:
     - name: install
       run: sudo apt-get install -y valgrind
     - name: valgrind
-      run: cp cmake-build-debug/prova.txt /build && ls build/ && valgrind ./build/api
+      run: sudo cp cmake-build-debug/prova.txt /build && ls build/ && valgrind ./build/api
 
