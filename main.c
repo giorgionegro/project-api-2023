@@ -32,6 +32,8 @@ void init_array(dynamic_array *array);
 
 void free_array(dynamic_array *array);
 
+void insertion_sort(uint32_t *array, int start, int end, int decreasing);
+
 
 void quicksort(uint32_t *array, int start, int end, int decreasing);
 
@@ -52,17 +54,13 @@ void demolish_car(char *line);
 void plan_path(char *line);
 
 
-char *strtok2(char *line, const char *string);
-
 char *strtok(char *line, const char *string);
 
-void reverse(uint32_t pInt, uint32_t pInt1);
+void reverse(uint32_t start, uint32_t end);
 
 void free_cars(struct car *pCar);
 
 station *stations = NULL;
-station *to_add = NULL;
-station *to_del = NULL;
 FILE *input;
 FILE *output;
 
@@ -73,7 +71,7 @@ uint32_t get(uint32_t i, dynamic_array *array) {
 
 void set(uint32_t i, uint32_t value, dynamic_array *array) {
     if (array->capacity <= i) {
-        array->capacity = i * 2;
+        array->capacity = (array->capacity < 100) ? array->capacity * 4 : array->capacity + 100;
         array->array = realloc(array->array, array->capacity * sizeof(uint32_t));
     }
     array->array[i] = value;
@@ -93,13 +91,18 @@ void free_array(dynamic_array *array) {
 int main() {
 //read from stdin and write to stdout
 //open input and output files
-    input = fopen("prova.txt", "r");
+    input = fopen("open_111.txt", "r");
     output = fopen("output.txt", "w");
+    // output = stdout;
+
     char *line = NULL;
-    line = malloc(512 * 5 * sizeof(char));
-    size_t len = 0;
-    ssize_t read;
-    while (fgets(line, 512 * 5, input)) {
+    line = malloc(512 * 10 * sizeof(char));
+    int line_number = 0;
+    while (fgets(line, 512 * 10, input)) {
+        if (line_number == 1047) {
+            printf("ciao");
+        }
+        line_number++;
         if (line == NULL)
             break;
         /**
@@ -147,12 +150,9 @@ station *get_station(uint32_t i) {
 void reverse(uint32_t start, uint32_t end) {
 
 
-    uint8_t terminate = 1;
     dynamic_array *result = malloc(sizeof(dynamic_array));
     init_array(result);
     set(0, start, result);
-    uint32_t fs = start;
-    uint32_t fe = end;
     int i = 1;
     station *temp = get_station(end);
     station *start_station = get_station(start);
@@ -161,14 +161,14 @@ void reverse(uint32_t start, uint32_t end) {
         free_array(result);
         return;
     }
-    while (terminate) {
+    while (1) {
         if (end == start) {
-            terminate = 0;
             break;
         } else if (start_station->cars != NULL && temp->distance + start_station->cars->autonomy >= start) {
             set(i, temp->distance, result);
             i++;
             start = temp->distance;
+            start_station = get_station(start);
             temp = get_station(end);
             continue;
         } else if (start_station->cars == NULL ||
@@ -193,8 +193,6 @@ void plan_path(char *line) {
     char *token = strtok(line, " ");
     uint32_t start = atoi(token);
     uint32_t end = atoi(strtok(NULL, " "));
-    uint32_t fs = start;
-    uint32_t fe = end;
     int32_t distance = (int32_t) end - (int32_t) start;
     if (distance < 0) {
         reverse(start, end);
@@ -221,24 +219,26 @@ void plan_path(char *line) {
     while (terminate) {
         if (end == start) {
             terminate = 0;
-        } else if (temp->cars->autonomy + start >= end) {
+        } else if (temp->cars->autonomy + temp->distance >= end) {
             set(i, temp->distance, result);
             i++;
             end = temp->distance;
             temp = get_station(start);
             continue;
-        } else if (temp->cars->autonomy + start < temp->next->distance) {
+        } else if ((temp->distance == start && temp->cars->autonomy + start < temp->next->distance) ||
+                   (temp->distance == end)) {
             fputs("nessun percorso\n", output);
             free_array(result);
             return;
-        } else if (temp->cars->autonomy == temp->next->distance) {
+        } else if (temp->distance == start && temp->distance + temp->cars->autonomy <= temp->next->next->distance &&
+                   temp->cars->autonomy + start >= temp->next->distance) {
             set(i, temp->distance, result);
             i++;
             start = temp->next->distance;
         }
         temp = temp->next;
     }
-    quicksort(result->array, 0, i - 1, 0);
+    insertion_sort(result->array, 0, i - 1, 0);
     for (int j = 0; j < i; j++) {
         fprintf(output, "%d ", get(j, result));
     }
@@ -278,11 +278,11 @@ void demolish_car(char *line) {
 
         }
         if (distance < temp->distance) {
-            fputs("non demolita\n", output);
+            fputs("non rottamata\n", output);
             return;
         }
     }
-    fputs("non demolita\n", output);
+    fputs("non rottamata\n", output);
 
 }
 
@@ -390,6 +390,7 @@ void add_station(char *line) {
         }
         prev = temp;
     }
+
     station *new_station = malloc(sizeof(station));
     if (prev == NULL) {
         new_station->next = stations;
@@ -400,6 +401,8 @@ void add_station(char *line) {
     }
     new_station->prev = prev;
     new_station->distance = distance;
+    if (new_station->next != NULL)
+        new_station->next->prev = new_station;
     token = strtok(NULL, " ");
     uint16_t num_cars = atoi(token);
     uint32_t autonomy[num_cars];
@@ -482,19 +485,34 @@ void swap(uint32_t *a, uint32_t *b) {
 int partition(uint32_t *array, int start, int end, int decreasing) {
     uint32_t pivot = array[end];
     int i = start - 1;
+
     for (int j = start; j < end; ++j) {
-        //decreasing order if decreasing == 1
-        if (array[j] < pivot && decreasing) {
-            i++;
-            swap(&array[i], &array[j]);
-        }
-        if (array[j] > pivot && !decreasing) {
+        if ((array[j] < pivot && !decreasing) || (array[j] > pivot && decreasing)) {
             i++;
             swap(&array[i], &array[j]);
         }
     }
+
     swap(&array[i + 1], &array[end]);
     return i + 1;
+}
+
+
+void quicksort(uint32_t *array, int start, int end, int decreasing) {
+    if (start < end) {
+        //hybrid quicksort
+//        if (end - start < 10) {
+//            insertion_sort(array, start, end, decreasing);
+//        } else {
+//            int pivot = partition(array, start, end, decreasing);
+//         quicksort(array, start, pivot - 1, decreasing);
+//       quicksort(array, pivot + 1, end, decreasing);
+//        }
+        int pivot = partition(array, start, end, decreasing);
+        quicksort(array, start, pivot - 1, decreasing);
+        quicksort(array, pivot + 1, end, decreasing);
+    }
+
 }
 
 void insertion_sort(uint32_t *array, int start, int end, int decreasing) {
@@ -519,21 +537,6 @@ void insertion_sort(uint32_t *array, int start, int end, int decreasing) {
 
 
     }
-}
-
-void quicksort(uint32_t *array, int start, int end, int decreasing) {
-    if (start < end) {
-        //hybrid quicksort
-        if (end - start < 10) {
-            insertion_sort(array, start, end, decreasing);
-        } else {
-            int pivot = partition(array, start, end, decreasing);
-            quicksort(array, start, pivot - 1, decreasing);
-            quicksort(array, pivot + 1, end, decreasing);
-        }
-    }
-
-
 }
 
 
