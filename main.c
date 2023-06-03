@@ -99,6 +99,7 @@ int main() {
     line = malloc(512 * 10 * sizeof(char));
     int line_number = 0;
     while (fgets(line, 512 * 10, input)) {
+        
         if (line_number == 1047) {
             printf("ciao");
         }
