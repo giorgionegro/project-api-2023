@@ -124,16 +124,15 @@ void go_to_next_line(FILE *file) {
 int main() {
 //read from stdin and write to stdout
 //open input and output files
-    input = fopen("prova.txt", "r");
-    output = fopen("output.txt", "w");
-    //input = stdin;
-    //output = stdout;
+    //input = fopen("prova.txt", "r");
+    //output = fopen("output.txt", "w");
+    input = stdin;
+    output = stdout;
     char *line;
 
     line = malloc(25 * sizeof(char));
-    int line_number = 0;
     while (read_space_end_line(line, input, 25)) {
-        line_number++;
+
         if (line == NULL)
             break;
         /**
@@ -317,7 +316,7 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
         } else if ((temp->distance == start &&
                     start - temp->cars->autonomy > temp->prev->distance) ||
                    (temp->distance == end)) {
-            free_stationr(list);
+            //free_stationr(list);
             return NULL;
         } else if (temp->distance - temp->cars->autonomy <= end) {
             list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
@@ -361,10 +360,16 @@ void reverse(uint32_t start, uint32_t end) {
 
     station_reverse *temp = list;
     station_reverse *temp2 = list->next;
+    //12890 12001 11056 9970 8190 5083 2635 1496
+    //12890 12001 11416 10233 9182 7654 4804 1496
+
+    //12890 12001 11056 9970 8190 5083 4804 1496
+
+    //12890 12001 11056 9970 8316 6004 4804 1496
     if (temp2 != NULL) {//if we have at least two stations we can try to move the middle one
         station_reverse *temp3 = list->next->next;
-        if (temp3 != NULL) {
-            while (temp3->next != NULL) {
+
+            while (temp3!= NULL) {
                 //now we check exist a station between temp3 and temp in range of temp->cars->autonomy (temp->distance - temp->cars->autonomy<=station->distance) that reach temp
                 station *right;
                 for (right = temp->station;
@@ -376,7 +381,7 @@ void reverse(uint32_t start, uint32_t end) {
                 //now we check for the closest station to temp3 that we can reach temp3
                 station *temp4;
                 for (temp4 = right; temp4 != temp2->station; temp4 = temp4->next) {
-                    if ((int32_t) temp4->distance - (int32_t) temp4->cars->autonomy <= temp3->distance) {
+                    if ((int32_t) temp4->distance - (int32_t) temp4->cars->autonomy <= (int32_t)temp3->distance) {
                         //we swap temp2 and temp4
                         temp2->station = temp4;
                         temp2->distance = temp4->distance;
@@ -388,15 +393,16 @@ void reverse(uint32_t start, uint32_t end) {
                 //now we set temp to temp2 and temp2 to temp3 and temp3 to temp3->prev
                 temp = temp2;
                 temp2 = temp3;
-                if (temp3->next != NULL) { temp3 = temp3->next; }
+               temp3 = temp3->next;
 
 
             }
 
-        }
+
     }
     //now we have to print the result from the end to the start
     //first we print the end station
+
     fprintf(output, "%d", list->station->distance);
     for (station_reverse *temp5 = list->next; temp5 != NULL; temp5 = temp5->next) {
         fprintf(output, " %d", temp5->station->distance);
@@ -651,7 +657,8 @@ void add_station(char *line) {
     if (new_station->next != NULL)
         new_station->next->prev = new_station;
 
-    uint32_t autonomy[num_cars];
+
+    uint32_t * autonomy = malloc(sizeof(uint32_t) * num_cars);
     for (int i = 0; i < num_cars; ++i) {
 
         read_space_end_line(token, input, 15);
@@ -660,6 +667,8 @@ void add_station(char *line) {
     if (num_cars > 1)
         quicksort(autonomy, 0, num_cars - 1, 0);
     if (num_cars == 0) {
+        free(autonomy);
+        autonomy = (uint32_t(*))malloc(sizeof(uint32_t));
         autonomy[0] = 0;
         num_cars = 1;
 
