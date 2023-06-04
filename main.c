@@ -124,7 +124,7 @@ void go_to_next_line(FILE *file) {
 int main() {
 //read from stdin and write to stdout
 //open input and output files
-    input = fopen("open_111.txt", "r");
+    input = fopen("prova.txt", "r");
     output = fopen("output.txt", "w");
     //input = stdin;
     //output = stdout;
@@ -182,8 +182,8 @@ int get_min_reverse(uint32_t start, uint32_t end) {
     uint8_t terminate = 1;
 
     int i = 1;
-    station *temp = get_station(start);
-
+    station *starts = get_station(start);
+    station *temp = starts;
     while (terminate) {
         if (end == start) {
             terminate = 0;
@@ -193,7 +193,7 @@ int get_min_reverse(uint32_t start, uint32_t end) {
         } else if (temp->distance - temp->cars->autonomy <= end) {
             i++;
             end = temp->distance;
-            temp = get_station(start);
+            temp = starts;
             continue;
         } else if (temp->distance == start &&
                    start - temp->cars->autonomy >= temp->prev->prev->distance &&
@@ -241,37 +241,168 @@ rec_reverse(uint32_t *array, uint32_t i, uint32_t step, station *ref, station *e
 
 }
 
+typedef struct station_reverse {
+    station *station;
+    uint32_t distance;
+    uint32_t autonomy;
+    struct station_reverse *next;
+    struct station_reverse *prev;
+} station_reverse;
+
+station_reverse *add_stationr(station_reverse *lstation, uint32_t autonomy, uint32_t distance, station *station) {
+
+    station_reverse *prev = NULL;
+    if (lstation == NULL) {
+        station_reverse *new = malloc(sizeof(station_reverse));
+        new->distance = distance;
+        new->autonomy = autonomy;
+        new->station = station;
+        new->next = NULL;
+        new->prev = NULL;
+        lstation = new;
+        return lstation;
+    }
+    for (station_reverse *temp = lstation; temp != NULL; temp = temp->next) {
+        if (temp->distance == distance) {
+            return NULL;
+        }
+        if (temp->distance > distance) {
+        }
+    }
+
+    station_reverse *new_station = malloc(sizeof(station_reverse));
+    if (prev == NULL) {
+        new_station->next = lstation;
+        lstation = new_station;
+    } else {
+        new_station->next = prev->next;
+        prev->next = new_station;
+    }
+    new_station->prev = prev;
+    new_station->distance = distance;
+    if (new_station->next != NULL)
+        new_station->next->prev = new_station;
+
+    new_station->autonomy = autonomy;
+    new_station->station = station;
+    return lstation;
+
+}
+
+void swaps(station *a, uint32_t distance, uint32_t autonomy) {
+    a->distance = distance;
+    a->cars->autonomy = autonomy;
+}
+
+uint32_t count = 0;
+
+
+void free_stationr(station_reverse *lstation) {
+    for (station_reverse *temp = lstation; temp != NULL; temp = temp->next) {
+        free(temp);
+    }
+
+}
+
+station_reverse *get_first_pass(uint32_t start, uint32_t end) {
+    uint8_t terminate = 1;
+    station_reverse *list = NULL;
+    int i = 1;
+    station *starts = get_station(start);
+    list = add_stationr(list, get_station(end)->cars->autonomy, end, get_station(end));
+    station *temp = starts;
+    while (terminate) {
+        if (end == start) {
+            terminate = 0;
+        } else if ((temp->distance == start &&
+                    start - temp->cars->autonomy > temp->prev->distance) ||
+                   (temp->distance == end)) {
+            free_stationr(list);
+            return NULL;
+        } else if (temp->distance - temp->cars->autonomy <= end) {
+            list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
+            i++;
+            end = temp->distance;
+            temp = starts;
+            continue;
+        } else if (temp->distance == start &&
+                   start - temp->cars->autonomy >= temp->prev->prev->distance &&
+                   start - temp->cars->autonomy <= temp->prev->distance) {
+            list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
+            i++;
+            start = temp->prev->distance;
+            starts = temp->prev;
+        }
+        temp = temp->prev;
+    }
+    count = i;
+    return list;
+}
+
 
 void reverse(uint32_t start, uint32_t end) {
-
-    //set(0, start, result);
-    int i;
-    station *temp = get_station(end);
-    station *start_station = get_station(start);
-    if (temp == NULL || start_station == NULL) {
+    station_reverse *list = get_first_pass(start, end);
+    if (list == NULL) {
         fputs("nessun percorso\n", output);
         return;
     }
 
-    //get min reverse
-    int min_reverse = get_min_reverse(start, end);
-    if (min_reverse == 0) {
-        fputs("nessun percorso\n", output);
-        return;
+    station_reverse *end_station;
+    station_reverse *prev = NULL;
+    for (end_station = list; end_station != NULL; end_station = end_station->next) {
+        prev = end_station;
     }
-    uint32_t result[min_reverse];
-    i = min_reverse;
-    if (!rec_reverse(result, 0, min_reverse, start_station, temp, start_station)) {
-        fputs("nessun percorso\n", output);
-        return;
+    end_station = prev;
+
+    //10 9 7 5 4 3 1
+
+    //get end station
+    //if not we take the results three by three, and we try to move the middle one to the left
+
+    station_reverse *temp = list;
+    station_reverse *temp2 = list->next;
+    if (temp2 != NULL) {//if we have at least two stations we can try to move the middle one
+        station_reverse *temp3 = list->next->next;
+        if (temp3 != NULL) {
+            while (temp3->next != NULL) {
+                //now we check exist a station between temp3 and temp in range of temp->cars->autonomy (temp->distance - temp->cars->autonomy<=station->distance) that reach temp
+                station *right;
+                for (right = temp->station;
+                     ((int32_t) temp->distance - (int32_t) temp->autonomy) <= right->distance;
+                     right = right->prev) {}
+                right = right->next;
+
+                //we got the furthest station that we can reach from temp
+                //now we check for the closest station to temp3 that we can reach temp3
+                station *temp4;
+                for (temp4 = right; temp4 != temp2->station; temp4 = temp4->next) {
+                    if ((int32_t) temp4->distance - (int32_t) temp4->cars->autonomy <= temp3->distance) {
+                        //we swap temp2 and temp4
+                        temp2->station = temp4;
+                        temp2->distance = temp4->distance;
+                        temp2->autonomy = temp4->cars->autonomy;
+                        break;
+                    }
+
+                }
+                //now we set temp to temp2 and temp2 to temp3 and temp3 to temp3->prev
+                temp = temp2;
+                temp2 = temp3;
+                if (temp3->next != NULL) { temp3 = temp3->next; }
+
+
+            }
+
+        }
     }
-    quicksort(result, 0, i - 1, 1);
-    //print first element
-    fprintf(output, "%d", result[0]);
-    for (int j = 1; j < i; j++) {
-        fprintf(output, " %d", result[j]);
+    //now we have to print the result from the end to the start
+    //first we print the end station
+    fprintf(output, "%d", list->station->distance);
+    for (station_reverse *temp5 = list->next; temp5 != NULL; temp5 = temp5->next) {
+        fprintf(output, " %d", temp5->station->distance);
     }
-    fputs("\n", output);
+    fprintf(output, "\n");
+
 }
 
 
