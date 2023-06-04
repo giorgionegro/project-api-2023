@@ -124,10 +124,10 @@ void go_to_next_line(FILE *file) {
 int main() {
 //read from stdin and write to stdout
 //open input and output files
-    //input = fopen("prova.txt", "r");
-    //output = fopen("output.txt", "w");
-    input = stdin;
-    output = stdout;
+    input = fopen("open_111.txt", "r");
+    output = fopen("output.txt", "w");
+    //input = stdin;
+    //output = stdout;
     char *line;
 
     line = malloc(25 * sizeof(char));
@@ -177,68 +177,6 @@ station *get_station(uint32_t i) {
     return temp;
 }
 
-int get_min_reverse(uint32_t start, uint32_t end) {
-    uint8_t terminate = 1;
-
-    int i = 1;
-    station *starts = get_station(start);
-    station *temp = starts;
-    while (terminate) {
-        if (end == start) {
-            terminate = 0;
-        } else if ((temp->distance == start && start - temp->cars->autonomy > temp->prev->distance) ||
-                   (temp->distance == end)) {
-            return 0;
-        } else if (temp->distance - temp->cars->autonomy <= end) {
-            i++;
-            end = temp->distance;
-            temp = starts;
-            continue;
-        } else if (temp->distance == start &&
-                   start - temp->cars->autonomy >= temp->prev->prev->distance &&
-                   start - temp->cars->autonomy <= temp->prev->distance) {
-
-            i++;
-            start = temp->prev->distance;
-        }
-        temp = temp->prev;
-    }
-    return i;
-
-
-}
-
-
-uint8_t
-rec_reverse(uint32_t *array, uint32_t i, uint32_t step, station *ref, station *end, station *start_station) {
-    uint8_t true = 1;
-    uint8_t false = 0;
-    array[i] = ref->distance;
-    if (ref == NULL || end == NULL || start_station == NULL) {
-        return false;
-    }
-    i++;
-    if (ref->distance == end->distance) {
-        return true;
-    }
-    station *left;
-    for (left = end; left != NULL; left = left->next) {
-        if (ref->distance - ref->cars->autonomy <= left->distance) {
-            break;
-        }
-    }
-    if (step == 1 && left != NULL && left->distance != end->distance) {
-        return false;
-    }
-    for (station *temp = left; (temp != NULL && temp != ref); temp = temp->next) {
-
-        if (rec_reverse(array, i, step - 1, temp, end, start_station)) {
-            return true;
-        }
-    }
-    return false;
-
-}
 
 typedef struct station_reverse {
     station *station;
@@ -297,8 +235,12 @@ uint32_t count = 0;
 
 
 void free_stationr(station_reverse *lstation) {
-    for (station_reverse *temp = lstation; temp != NULL; temp = temp->next) {
+
+    for (station_reverse *temp = lstation; temp != NULL; ) {
+        station_reverse *temp_station = temp->next;
         free(temp);
+        temp = temp_station;
+
     }
 
 }
@@ -316,7 +258,7 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
         } else if ((temp->distance == start &&
                     start - temp->cars->autonomy > temp->prev->distance) ||
                    (temp->distance == end)) {
-            //free_stationr(list);
+                free_stationr(list);
             return NULL;
         } else if (temp->distance - temp->cars->autonomy <= end) {
             list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
@@ -408,6 +350,7 @@ void reverse(uint32_t start, uint32_t end) {
         fprintf(output, " %d", temp5->station->distance);
     }
     fprintf(output, "\n");
+    free_stationr(list);
 
 }
 
@@ -656,9 +599,11 @@ void add_station(char *line) {
     new_station->distance = distance;
     if (new_station->next != NULL)
         new_station->next->prev = new_station;
+    int m=num_cars;
+    if (num_cars ==0)
+        m = 1;
 
-
-    uint32_t * autonomy = malloc(sizeof(uint32_t) * num_cars);
+    uint32_t autonomy[m];
     for (int i = 0; i < num_cars; ++i) {
 
         read_space_end_line(token, input, 15);
@@ -667,8 +612,6 @@ void add_station(char *line) {
     if (num_cars > 1)
         quicksort(autonomy, 0, num_cars - 1, 0);
     if (num_cars == 0) {
-        free(autonomy);
-        autonomy = (uint32_t(*))malloc(sizeof(uint32_t));
         autonomy[0] = 0;
         num_cars = 1;
 
