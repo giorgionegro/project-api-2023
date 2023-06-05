@@ -506,6 +506,9 @@ void demolish_station(char *line) {
             if (temp->next != NULL) { temp->next->prev = prev; }
             //see if in to_update and remove
             free_cars(temp->cars);
+            if (cache_station == temp) {
+                cache_station = NULL;
+            }
             free(temp);
             number_station--;
             fputs("demolita\n", output);
@@ -555,6 +558,7 @@ void add_station(char *line) {
     }
 
     station *new_station = malloc(sizeof(station));
+    cache_station = new_station;
     if (prev == NULL) {
         new_station->next = stations;
         stations = new_station;
