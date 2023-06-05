@@ -393,6 +393,7 @@ void reverse(uint32_t start, uint32_t end) {
         t_c->smaller = malloc(sizeof(station_reverse));
         t_c->smaller->bigger = t_c;
         t_c = t_c->smaller;
+        t_c->smaller = NULL;
         t_c->station = temp->station;
         temp = temp->smaller;
     }
@@ -527,7 +528,8 @@ void add_car(char *line) {
     read_space_end_line(token, input, 15);
     int32_t autonomy = atoi(token);
     station *start = stations;
-    if (cache_station != NULL && cache_station->distance == distance) {
+    if (cache_station != NULL &&
+    cache_station->distance == distance) {
         start = cache_station;
     }
     //first we check if we have the station in the list
