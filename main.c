@@ -4,6 +4,8 @@
 #include <string.h>
 
 
+#define true 1
+#define false 0
 typedef struct car {
     int32_t autonomy;
     int32_t quantity;
@@ -55,13 +57,13 @@ void free_array(dynamic_array *array);
 void insertion_sort(uint32_t *array, int start, int end, int decreasing);
 
 
-void quicksort(uint32_t *array, int start, int end, int decreasing);
+void quicksort(int32_t *array, int start, int end, int decreasing);
 
-int partition(uint32_t *array, int start, int end, int decreasing);
+int partition(int32_t *array, int start, int end, int decreasing);
 
 uint8_t first_parser(const char *cmd);
 
-void swap(uint32_t *a, uint32_t *b);
+void swap(int32_t *a, int32_t *b);
 
 void add_station(char *line);
 
@@ -154,7 +156,7 @@ int main() {
 //open input and output files
     input = fopen("open_111.txt", "r");
     //output = fopen("output.txt", "w");
-    //input = stdin;
+//    input = stdin;
     output = stdout;
     char *line;
 
@@ -214,7 +216,7 @@ typedef struct station_reverse {
     struct station_reverse *bigger;
 } station_reverse;
 
-station_reverse *add_stationr(station_reverse *lstation, uint32_t autonomy, uint32_t distance, station *station) {
+station_reverse *add_stationr(station_reverse *lstation, uint32_t distance, station *station) {
 
     station_reverse *prev = NULL;
     if (lstation == NULL) {
@@ -242,11 +244,8 @@ station_reverse *add_stationr(station_reverse *lstation, uint32_t autonomy, uint
         prev->smaller = new_station;
     }
     new_station->bigger = prev;
-    new_station->station->distance = distance;
     if (new_station->smaller != NULL)
         new_station->smaller->bigger = new_station;
-
-    new_station->station->cars->autonomy = autonomy;
     new_station->station = station;
     return lstation;
 
@@ -276,7 +275,7 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
     station_reverse *list = NULL;
     int i = 1;
     station *starts = get_station(start);
-    list = add_stationr(list, get_station(end)->cars->autonomy, end, get_station(end));
+    list = add_stationr(list, end, get_station(end));
     station *temp = starts;
     while (terminate) {
         if (end == start) {
@@ -287,7 +286,7 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
             free_stationr(list);
             return NULL;
         } else if (temp->distance - temp->cars->autonomy <= end) {
-            list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
+            list = add_stationr(list, temp->distance, temp);
             i++;
             end = temp->distance;
             temp = starts;
@@ -295,7 +294,7 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
         } else if (temp->distance == start &&
                    start - temp->cars->autonomy >= temp->prev->prev->distance &&
                    start - temp->cars->autonomy <= temp->prev->distance) {
-            list = add_stationr(list, temp->cars->autonomy, temp->distance, temp);
+            list = add_stationr(list, temp->distance, temp);
             i++;
             start = temp->next->distance;
             starts = temp->next;
@@ -342,87 +341,70 @@ void init_array_station(dynamic_array_station *station1) {
 
 
 
-uint8_t c(station *current, station_reverse *best, station_reverse *currentNavigated) {
+uint8_t c(station *current, station_reverse *best, station_reverse *currentNavigated, station_reverse *end) {
 
-    if (best == NULL) {
+    if (best == end) {
         return 1;
     }
     int32_t current_d_a = current->distance - current->cars->autonomy;
-    station *left = currentNavigated->station->prev;
-    if (left != NULL && current_d_a <= left->distance) {
-    } else {
-        return 0;
+    station *left = currentNavigated->station->next;
+    if (current_d_a > left->distance) {
+        if (current_d_a <= best->station->distance)
+            return true;
+        return false;
     }
 
-    if (left == NULL) {
-        if (current_d_a <= best->station->distance) {
-            return 1;
-        }
-        return 0;
+    for (; (current_d_a <= left->distance); left = left->prev) {
+        if (c(left, best->smaller, currentNavigated->smaller, end))
+            best->station = left;
+        currentNavigated->station = left;
+        if (left->prev == NULL)
+            break;
+
     }
-    for (station *temp = left; temp != NULL && current_d_a <= temp->distance; temp = temp->prev) {
-        if (c(temp, best->smaller, currentNavigated->smaller)) {
-            best->station = temp;
-        }
-        currentNavigated->station = temp;
-    }
-    return 1;
+
+    return true;
 }
-
-
-/*
- * findShortestReverse(bigger, smaller){
-
-best = shortestPath(bigger, smaller)
-
-if(best!=NULL){
-navigated = foreach of best the one before (the first of navigated should have NULL station and reference to next)
-
-c(best, best, navigated);
-
-best is the best
-}else{
-NESSUN PERCORSO
-}
-}
- */
-
-
-
-
-
-
-
-
 
 
 void reverse(uint32_t start, uint32_t end) {
-    //update statio based on to update and to remove
     station_reverse *best = get_first_pass(start, end);
     if (best == NULL) {
         fprintf(output, "nessun percorso\n");
+        free_stationr(best);
         return;
     }
-    station_reverse *currentNavigated = malloc(sizeof(station_reverse));
+    fprintf(output, "%d", best->station->distance);
+    for (station_reverse *temp5 = best->smaller; temp5 != NULL; temp5 = temp5->smaller) {
+        fprintf(output, " %d", temp5->station->distance);
+    }
+    fprintf(output, "\n");
+    fflush(output);
+
+
+    station_reverse *end_station;
+    for (end_station = best; end_station->smaller != NULL; end_station = end_station->smaller);
+
+    station_reverse *currentNavigated = NULL;
+    currentNavigated = add_stationr(currentNavigated, best->station->distance, NULL);
+    station_reverse *t_c = currentNavigated;
     station_reverse *temp = best;
-    station_reverse *prev = NULL;
     while (temp != NULL) {
-        currentNavigated->station = temp->station->next;
-        currentNavigated->smaller = prev;
-        if (prev != NULL) {
-            prev->bigger = currentNavigated;
-        }
+        t_c->smaller = malloc(sizeof(station_reverse));
+        t_c->smaller->bigger = t_c;
+        t_c = t_c->smaller;
+        t_c->station = temp->station;
         temp = temp->smaller;
     }
-    c(best->station, best, currentNavigated);
 
-
+    c(best->station, best->smaller, currentNavigated->smaller, end_station);
     fprintf(output, "%d", best->station->distance);
     for (station_reverse *temp5 = best->smaller; temp5 != NULL; temp5 = temp5->smaller) {
         fprintf(output, " %d", temp5->station->distance);
     }
     fprintf(output, "\n");
     free_stationr(best);
+    free_stationr(currentNavigated);
 
 }
 
@@ -761,13 +743,13 @@ uint8_t first_parser(const char *cmd) {
     return 4;
 }
 
-void swap(uint32_t *a, uint32_t *b) {
+void swap(int32_t *a, int32_t *b) {
     uint32_t temp = *a;
     *a = *b;
     *b = temp;
 }
 
-int partition(uint32_t *array, int start, int end, int decreasing) {
+int partition(int32_t *array, int start, int end, int decreasing) {
     uint32_t pivot = array[end];
     int i = start - 1;
 
@@ -783,7 +765,7 @@ int partition(uint32_t *array, int start, int end, int decreasing) {
 }
 
 
-void quicksort(uint32_t *array, int start, int end, int decreasing) {
+void quicksort(int32_t *array, int start, int end, int decreasing) {
     if (start < end) {
         //hybrid quicksort
 //        if (end - start < 10) {
