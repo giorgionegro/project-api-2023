@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
-
 
 #define true 1
 #define false 0
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC optimize("O3")
 typedef struct car {
     int32_t autonomy;
     int32_t quantity;
@@ -13,55 +14,37 @@ typedef struct car {
 } car;
 typedef struct station {
     int32_t distance;
-    struct car *cars;
+    struct car *cars; //TODO trasformare in heap
     struct station *next;
     struct station *prev;
 } station;
 
-typedef struct station_update {
-    struct station *station;
-    int32_t distance;
-    int32_t sautonomy;
-    int32_t eautonomy;
-    struct station_update *next;
-} station_update;
-
 
 typedef struct dynamic_array dynamic_array;
 
-typedef struct dynamic_array_station dynamic_array_station;
-
-
-int get_all_station_reachable(dynamic_array_station *array, station *station1);
-
-
-uint32_t number_station = 0;
+int32_t number_station = 0;
 typedef struct dynamic_array {
-    uint32_t *array;
-    uint32_t capacity;
+    int32_t *array;
+    int32_t capacity;
 } dynamic_array;
 
-typedef struct dynamic_array_station {
-    station **array;
-    uint32_t capacity;
-} dynamic_array_station;
 
-uint32_t get(uint32_t i, dynamic_array *array);
+int32_t get(int32_t i, dynamic_array *array);
 
-void set(uint32_t i, uint32_t value, dynamic_array *array);
+void set(int32_t i, int32_t value, dynamic_array *array);
 
 void init_array(dynamic_array *array);
 
 void free_array(dynamic_array *array);
 
-void insertion_sort(uint32_t *array, int start, int end, int decreasing);
+void insertion_sort(int32_t *array, int start, int end, int decreasing);
 
 
 void quicksort(int32_t *array, int start, int end, int decreasing);
 
 int partition(int32_t *array, int start, int end, int decreasing);
 
-uint8_t first_parser(const char *cmd);
+int8_t first_parser(const char *cmd);
 
 void swap(int32_t *a, int32_t *b);
 
@@ -78,42 +61,32 @@ void plan_path(char *line);
 typedef struct station_reverse station_reverse;
 
 
-void reverse(uint32_t start, uint32_t end);
+void reverse(int32_t start, int32_t end);
 
 void free_cars(struct car *pCar);
 
-void set_station(int i, station *value, dynamic_array_station *pArray);
-
-void init_array_station(dynamic_array_station *station);
-
-void get_all_station_reachable_from_null(int32_t distance, int32_t sautonomy, int32_t eautonomy);
 
 station *stations = NULL;
 FILE *input;
 FILE *output;
 
 
-uint32_t get(uint32_t i, dynamic_array *array) {
+int32_t get(int32_t i, dynamic_array *array) {
     return (array->array)[i];
 }
 
-void set(uint32_t i, uint32_t value, dynamic_array *array) {
+void set(int32_t i, int32_t value, dynamic_array *array) {
     if (array->capacity <= i) {
-        uint32_t old_capacity = array->capacity;
         array->capacity = (array->capacity < 100) ? array->capacity * 4 : array->capacity + 100;
-        array->array = realloc(array->array, array->capacity * sizeof(uint32_t));
-        // init the new array to -1 with memset
-        memset(array->array + old_capacity, -1, (array->capacity - old_capacity) * sizeof(uint32_t));
+        array->array = realloc(array->array, array->capacity * sizeof(int32_t));
+
     }
     array->array[i] = value;
 }
 
 void init_array(dynamic_array *array) {
     array->capacity = 5;
-    array->array = malloc(array->capacity * sizeof(uint32_t));
-    //init all the array to -1 with memset
-    memset(array->array, -1, array->capacity * sizeof(uint32_t));
-
+    array->array = malloc(array->capacity * sizeof(int32_t));
 }
 
 void free_array(dynamic_array *array) {
@@ -148,16 +121,14 @@ void go_to_next_line(FILE *file) {
 }
 
 station *cache_station = NULL;
-station_update *to_update = NULL;
-station_update *to_remove = NULL;
 
-int main() {
+int main(void) {
 //read from stdin and write to stdout
 //open input and output files
     input = fopen("open_111.txt", "r");
-    //output = fopen("output.txt", "w");
+    output = fopen("output.txt", "w");
 //    input = stdin;
-    output = stdout;
+//    output = stdout;
     char *line;
 
     line = malloc(25 * sizeof(char));
@@ -171,14 +142,12 @@ int main() {
      *   rottama-auto  4
      *   pianifica-percorso  5
      */
-        uint8_t cmd = first_parser(line);
+        int8_t cmd = first_parser(line);
         switch (cmd) {
             case 1:
-                cache_station = NULL;
                 add_station(line);
                 break;
             case 2:
-                cache_station = NULL;
                 demolish_station(line);
                 break;
             case 3:
@@ -188,7 +157,6 @@ int main() {
                 demolish_car(line);
                 break;
             case 5:
-                cache_station = NULL;
                 plan_path(line);
                 break;
         }
@@ -201,7 +169,7 @@ int main() {
 }
 
 
-station *get_station(uint32_t i) {
+station *get_station(int32_t i) {
     station *temp = stations;
     while (temp != NULL && temp->distance != i) {
         temp = temp->next;
@@ -213,69 +181,39 @@ station *get_station(uint32_t i) {
 typedef struct station_reverse {
     station *station;
     struct station_reverse *smaller;
-    struct station_reverse *bigger;
 } station_reverse;
 
-station_reverse *add_stationr(station_reverse *lstation, uint32_t distance, station *station) {
-
-    station_reverse *prev = NULL;
-    if (lstation == NULL) {
-        station_reverse *new = malloc(sizeof(station_reverse));
-        new->station = station;
-        new->smaller = NULL;
-        new->bigger = NULL;
-        lstation = new;
-        return lstation;
-    }
-    for (station_reverse *temp = lstation; temp != NULL; temp = temp->smaller) {
-        if (temp->station->distance == distance) {
-            return NULL;
-        }
-        if (temp->station->distance > distance) {
-        }
-    }
-
-    station_reverse *new_station = malloc(sizeof(station_reverse));
-    if (prev == NULL) {
-        new_station->smaller = lstation;
-        lstation = new_station;
-    } else {
-        new_station->smaller = prev->smaller;
-        prev->smaller = new_station;
-    }
-    new_station->bigger = prev;
-    if (new_station->smaller != NULL)
-        new_station->smaller->bigger = new_station;
-    new_station->station = station;
-    return lstation;
+station_reverse *add_stationr(station_reverse *lstation, station *station) {
+    station_reverse *new = malloc(sizeof(station_reverse));
+    new->station = station;
+    new->smaller = lstation;
+    return new;
 
 }
-
-void swaps(station *a, uint32_t distance, uint32_t autonomy) {
-    a->distance = distance;
-    a->cars->autonomy = autonomy;
-}
-
-uint32_t count = 0;
 
 
 void free_stationr(station_reverse *lstation) {
-
+    if (lstation == NULL)
+        return;
     for (station_reverse *temp = lstation; temp != NULL;) {
         station_reverse *temp_station = temp->smaller;
         free(temp);
         temp = temp_station;
-
     }
 
 }
 
-station_reverse *get_first_pass(uint32_t start, uint32_t end) {
-    uint8_t terminate = 1;
+station_reverse *get_first_pass(int32_t start, int32_t end) {
+    int8_t terminate = 1;
     station_reverse *list = NULL;
-    int i = 1;
     station *starts = get_station(start);
-    list = add_stationr(list, end, get_station(end));
+    if (starts == NULL)
+        return NULL;
+    station *ends = get_station(end);
+    if (ends == NULL)
+        return NULL;
+
+    list = add_stationr(list, ends);
     station *temp = starts;
     while (terminate) {
         if (end == start) {
@@ -283,71 +221,41 @@ station_reverse *get_first_pass(uint32_t start, uint32_t end) {
         } else if ((temp->distance == start &&
                     start - temp->cars->autonomy > temp->prev->distance) ||
                    (temp->distance == end)) {
+
+
             free_stationr(list);
-            return NULL;
+            terminate = 0;
+            list = NULL;
+
+
         } else if (temp->distance - temp->cars->autonomy <= end) {
-            list = add_stationr(list, temp->distance, temp);
-            i++;
+            list = add_stationr(list, temp);
             end = temp->distance;
             temp = starts;
             continue;
-        } else if (temp->distance == start &&
-                   start - temp->cars->autonomy >= temp->prev->prev->distance &&
-                   start - temp->cars->autonomy <= temp->prev->distance) {
-            list = add_stationr(list, temp->distance, temp);
-            i++;
-            start = temp->next->distance;
-            starts = temp->next;
         }
+//        else if (temp->distance == start &&
+//                   start - temp->cars->autonomy >= temp->prev->prev->distance &&
+//                   start - temp->cars->autonomy <= temp->prev->distance) {
+//            list = add_stationr(list, temp);
+//            start = temp->next->distance;
+//            starts = temp->next;
+//        }
         temp = temp->prev;
     }
-    count = i;
     return list;
 }
 
-/*char *print_station(station_reverse *list) {
-    char *string = malloc(1000 * sizeof(char));
-    sprintf(string, "%d", list->station->distance);
-    for (station_reverse *temp5 = list->smaller; temp5 != NULL; temp5 = temp5->smaller) {
-        sprintf(string, " %d", temp5->station->distance);
-    }
-    return string;
-}*/
 
-
-
-
-void init_array_station(dynamic_array_station *station1) {
-    station1->array = malloc(sizeof(station) * 10);
-    station1->capacity = 10;
-}
-
-//
-//bool c(current, best, currentNavigated){
-//    if(best==NULL) return true
-//    left = leftmost after currentNavigated in range of current
-//    if(left == NULL){
-//        if(best in range of current) return true
-//        return false
-//    }
-//    for( ; left in range of current; left = left -> smaller){
-//        if(c(left, best->smaller, currentNavigated-> smaller)){
-//            best->station = left->station
-//        }
-//        currentNavigated->station = left->station
-//    }
-//    return true
-//}
-
-
-
-uint8_t c(station *current, station_reverse *best, station_reverse *currentNavigated, station_reverse *end) {
+int8_t c(station *current, station_reverse *best, station_reverse *currentNavigated, station_reverse *end) {
 
     if (best == end) {
         return 1;
     }
     int32_t current_d_a = current->distance - current->cars->autonomy;
-    station *left = currentNavigated->station->next;
+
+    station *left = currentNavigated->station;
+
     if (current_d_a > left->distance) {
         if (current_d_a <= best->station->distance)
             return true;
@@ -355,57 +263,57 @@ uint8_t c(station *current, station_reverse *best, station_reverse *currentNavig
     }
 
     for (; (current_d_a <= left->distance); left = left->prev) {
+//        if (left->distance == 963695568) {
+//            printf("ciao");
+//        }
         if (c(left, best->smaller, currentNavigated->smaller, end))
             best->station = left;
         currentNavigated->station = left;
-        if (left->prev == NULL)
-            break;
 
     }
+    if (left == NULL)
+        return true;
 
     return true;
 }
 
 
-void reverse(uint32_t start, uint32_t end) {
+void reverse(int32_t start, int32_t end) {
+    station *temp2 = get_station(end);
+    station *start_station = get_station(start);
+    if (temp2 == NULL || start_station == NULL) {
+        fputs("nessun percorso\n", output);
+        return;
+    }
     station_reverse *best = get_first_pass(start, end);
     if (best == NULL) {
         fprintf(output, "nessun percorso\n");
+    } else {
+        station_reverse *end_station;
+        for (end_station = best; end_station->smaller != NULL; end_station = end_station->smaller);
+
+        station_reverse *currentNavigated = NULL;
+        currentNavigated = add_stationr(currentNavigated, NULL);
+        station_reverse *t_c = currentNavigated;
+        station_reverse *temp = best->smaller;
+        while (temp != NULL) {
+            t_c->smaller = malloc(sizeof(station_reverse));
+            t_c = t_c->smaller;
+            t_c->smaller = NULL;
+            t_c->station = temp->station->next;
+            temp = temp->smaller;
+        }
+
+
+        c(best->station, best->smaller, currentNavigated->smaller, end_station);
+        fprintf(output, "%d", best->station->distance);
+        for (station_reverse *temp5 = best->smaller; temp5 != NULL; temp5 = temp5->smaller) {
+            fprintf(output, " %d", temp5->station->distance);
+        }
+        fprintf(output, "\n");
+        free_stationr(currentNavigated);
         free_stationr(best);
-        return;
     }
-    fprintf(output, "%d", best->station->distance);
-    for (station_reverse *temp5 = best->smaller; temp5 != NULL; temp5 = temp5->smaller) {
-        fprintf(output, " %d", temp5->station->distance);
-    }
-    fprintf(output, "\n");
-    fflush(output);
-
-
-    station_reverse *end_station;
-    for (end_station = best; end_station->smaller != NULL; end_station = end_station->smaller);
-
-    station_reverse *currentNavigated = NULL;
-    currentNavigated = add_stationr(currentNavigated, best->station->distance, NULL);
-    station_reverse *t_c = currentNavigated;
-    station_reverse *temp = best;
-    while (temp != NULL) {
-        t_c->smaller = malloc(sizeof(station_reverse));
-        t_c->smaller->bigger = t_c;
-        t_c = t_c->smaller;
-        t_c->smaller = NULL;
-        t_c->station = temp->station;
-        temp = temp->smaller;
-    }
-
-    c(best->station, best->smaller, currentNavigated->smaller, end_station);
-    fprintf(output, "%d", best->station->distance);
-    for (station_reverse *temp5 = best->smaller; temp5 != NULL; temp5 = temp5->smaller) {
-        fprintf(output, " %d", temp5->station->distance);
-    }
-    fprintf(output, "\n");
-    free_stationr(best);
-    free_stationr(currentNavigated);
 
 }
 
@@ -413,9 +321,9 @@ void reverse(uint32_t start, uint32_t end) {
 void plan_path(char *line) {
     char *token = malloc(sizeof(char) * 15);
     read_space_end_line(token, input, 15);
-    uint32_t start = atoi(token);
+    int32_t start = atoi(token);
     read_space_end_line(token, input, 15);
-    uint32_t end = atoi(token);
+    int32_t end = atoi(token);
     int32_t distance = (int32_t) end - (int32_t) start;
     if (distance < 0) {
         reverse(start, end);
@@ -430,7 +338,7 @@ void plan_path(char *line) {
         free(token);
         return;
     }
-    uint8_t terminate = 1;
+    int8_t terminate = 1;
     dynamic_array *result = malloc(sizeof(dynamic_array));
     init_array(result);
     set(0, end, result);
@@ -529,9 +437,10 @@ void add_car(char *line) {
     int32_t autonomy = atoi(token);
     station *start = stations;
     if (cache_station != NULL &&
-    cache_station->distance == distance) {
+        cache_station->distance == distance) {
         start = cache_station;
     }
+
     //first we check if we have the station in the list
     for (station *temp = start; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
@@ -580,9 +489,8 @@ void add_car(char *line) {
 
 void demolish_station(char *line) {
     station *prev = NULL;
-    char *token = malloc(sizeof(char) * 15);
-    read_space_end_line(token, input, 15);
-    int32_t distance = atoi(token);
+    int32_t distance;
+    fscanf(input, "%d", &distance);
     station *start = stations;
     if (cache_station != NULL && cache_station->distance == distance) {
         start = cache_station;
@@ -601,18 +509,15 @@ void demolish_station(char *line) {
             free(temp);
             number_station--;
             fputs("demolita\n", output);
-            free(token);
             return;
         }
         if (distance < temp->distance) {
             fputs("non demolita\n", output);
-            free(token);
             return;
         }
         prev = temp;
     }
     fputs("non demolita\n", output);
-    free(token);
 
 }
 
@@ -630,18 +535,17 @@ void add_station(char *line) {
     //aggiungi-stazione <distanza> <numero auto> <autonomia-1> <autonomia-2> ... <autonomia-n>
     //first  we get_station the distance
     //disgard the first token
-    char *token = malloc(sizeof(char) * 15);
-    read_space_end_line(token, input, 15);
-    int32_t distance = atoi(token);
-    read_space_end_line(token, input, 15);
-    uint16_t num_cars = atoi(token);
+    int32_t distance;
+    fscanf(input, "%d", &distance);
+    int32_t num_cars;
+    fscanf(input, "%d", &num_cars);
     //first we check if we have the station in the list
     station *prev = NULL;
     for (station *temp = stations; temp != NULL; temp = temp->next) {
         if (temp->distance == distance) {
             fputs("non aggiunta\n", output);
-            free(token);
-            go_to_next_line(input);
+            fscanf(input, "\n");
+            //go_to_next_line(input);
             return;
         }
         if (temp->distance > distance) {
@@ -668,9 +572,10 @@ void add_station(char *line) {
 
     int32_t autonomy[m];
     for (int i = 0; i < num_cars; ++i) {
+        fscanf(input, "%d", &autonomy[i]);
+        //read_space_end_line(token, input, 15);
+        //autonomy[i] = atoi(token);
 
-        read_space_end_line(token, input, 15);
-        autonomy[i] = atoi(token);
     }
     if (num_cars > 1)
         quicksort(autonomy, 0, num_cars - 1, 0);
@@ -681,7 +586,7 @@ void add_station(char *line) {
     }
 
     car *cars = NULL;
-    uint32_t prev_autonomy = -1;
+    int32_t prev_autonomy = -1;
     for (int i = 0; i < num_cars; ++i) {
         if (prev_autonomy == autonomy[i]) {
             cars->quantity++;
@@ -697,7 +602,6 @@ void add_station(char *line) {
     new_station->cars = cars;
     number_station++;
     fputs("aggiunta\n", output);
-    free(token);
 }
 
 
@@ -723,12 +627,12 @@ void add_station(char *line) {
 
 
 
-//quicksort array of uint32_t
+//quicksort array ofint32_t
 
 
 
 
-uint8_t first_parser(const char *cmd) {
+int8_t first_parser(const char *cmd) {
     /**
      *   aggiungi-stazione <distanza> <numero auto> <autonomia-1> <autonomia-2> ... <autonomia-n> 1
      *   demolisci-stazione <distanza> 2
@@ -746,13 +650,13 @@ uint8_t first_parser(const char *cmd) {
 }
 
 void swap(int32_t *a, int32_t *b) {
-    uint32_t temp = *a;
+    int32_t temp = *a;
     *a = *b;
     *b = temp;
 }
 
 int partition(int32_t *array, int start, int end, int decreasing) {
-    uint32_t pivot = array[end];
+    int32_t pivot = array[end];
     int i = start - 1;
 
     for (int j = start; j < end; ++j) {
@@ -769,14 +673,6 @@ int partition(int32_t *array, int start, int end, int decreasing) {
 
 void quicksort(int32_t *array, int start, int end, int decreasing) {
     if (start < end) {
-        //hybrid quicksort
-//        if (end - start < 10) {
-//            insertion_sort(array, start, end, decreasing);
-//        } else {
-//            int pivot = partition(array, start, end, decreasing);
-//         quicksort(array, start, pivot - 1, decreasing);
-//       quicksort(array, pivot + 1, end, decreasing);
-//        }
         int pivot = partition(array, start, end, decreasing);
         quicksort(array, start, pivot - 1, decreasing);
         quicksort(array, pivot + 1, end, decreasing);
@@ -784,9 +680,9 @@ void quicksort(int32_t *array, int start, int end, int decreasing) {
 
 }
 
-void insertion_sort(uint32_t *array, int start, int end, int decreasing) {
+void insertion_sort(int32_t *array, int start, int end, int decreasing) {
     for (int i = start + 1; i <= end; ++i) {
-        uint32_t key = array[i];
+        int32_t key = array[i];
         int j = i - 1;
         //decreasing order if decreasing == 1
         if (decreasing) {
@@ -809,25 +705,5 @@ void insertion_sort(uint32_t *array, int start, int end, int decreasing) {
 }
 
 
-int get_all_station_reachable(dynamic_array_station *array, station *station1) {
-//dynamic_array of stations reachable
-    station *temp = station1;
-    int i = 0;
-    while (temp != NULL && station1->distance - station1->cars->autonomy < temp->distance) {
-        set_station(i, station1, array);
-        i++;
-        temp = temp->prev;
-    }
-    return i;
-}
-
-void set_station(int i, station *value, dynamic_array_station *pArray) {
-    if (pArray->capacity <= i) {
-        pArray->capacity = (pArray->capacity < 100) ? pArray->capacity * 4 : pArray->capacity + 100;
-        pArray->array = realloc(pArray->array, pArray->capacity * sizeof(uint32_t));
-    }
-    (pArray->array)[i] = value;
-
-}
 
 
